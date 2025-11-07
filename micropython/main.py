@@ -1,3 +1,3 @@
 while True:
-    line = input("Enter: ")
+    line = input("Enter: ").lower().strip()
     print(line)
