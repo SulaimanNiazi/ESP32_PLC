@@ -2,14 +2,14 @@ FLASHING_PINS = [1,3]
 MEMORY_PINS   = [6,7,8,9,10,11]
 
 from machine import Pin
-from time import sleep_ms
+from time import sleep_us
 from _thread import start_new_thread
 
 gates = []
 
 def runGates():
     while True:
-        sleep_ms(10)
+        sleep_us(1)
         for (pinA , pinB, op, pinO) in gates:
             if   op=='+':
                 pinO.value((pinA.value() or pinB.value()))
@@ -21,17 +21,27 @@ def runGates():
                 pinO.value(pinA.value())
 
 def setPin(pin:str, mode:int, value=None):
-    pin_num = int(pin)
+    id = int(pin)
 
-    if pin_num in FLASHING_PINS:
+    if id in FLASHING_PINS:
         raise ValueError('Cannot use pins used for flashing or debugging.')
-    elif pin_num in MEMORY_PINS:
+    elif id in MEMORY_PINS:
         raise ValueError('Cannot use pins connected to flash memory.')
 
-    elif mode==Pin.OUT:
-        return Pin(pin_num, mode, value=value)
+    if mode==Pin.OUT:
+        return Pin(id, mode, value=value)
     else:
-        return Pin(pin_num, mode)
+        return Pin(id, mode)
+    
+def setGate(pinA:Pin, pinB:Pin, op:str, pinO:Pin):
+    new = (pinA, pinB, op, pinO)
+    
+    if new in gates:
+        raise ValueError('Gate already exists.')
+    elif pinA==pinO or pinB==pinO:
+        raise ValueError('Output pin cannot be the same as input pin(s).')
+    
+    gates.append(new)
 
 def main():
     while True:
@@ -46,7 +56,7 @@ def main():
             
             try:
                 if line[0].isdigit():
-                    if (count > 2) and (params[-2]=='='):
+                    if count > 2 and params[-2]=='=':
                         "Set Commands"
                         if count == 3:
                             "Set Pin Command"
@@ -58,7 +68,7 @@ def main():
                                 if num in (0,1):
                                     pinA.value(num)
                                 else:
-                                    gates.append((pinA, None, '=', setPin(params[2], Pin.OUT, value=pinA.value())))
+                                    setGate(pinA, None, '=', setPin(params[2], Pin.OUT, value=pinA.value()))
                             print('OK')
                         
                         elif count == 5:        
@@ -66,8 +76,7 @@ def main():
                                 "Set OR gate command"
                                 pinA, pinB = setPin(params[0], Pin.IN), setPin(params[2], Pin.IN)
                                 pinO = setPin(params[4], Pin.OUT, value=(pinA.value() or pinB.value()))
-
-                                gates.append((pinA, pinB, '+', pinO))
+                                setGate(pinA, pinB, '+', pinO)
                                 print('OK')
 
                             else:
@@ -76,7 +85,7 @@ def main():
                             raise SyntaxError('Invalid amount of parameters')
                 else:
                     if count==1:
-                        if (params[0]=='gates') and debug:
+                        if params[0]=='gates' and debug:
                             print("OK",f"\n{gates}")
 
                         else:
