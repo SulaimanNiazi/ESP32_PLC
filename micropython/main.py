@@ -2,7 +2,8 @@ FLASHING_PINS = [1,3]
 MEMORY_PINS   = [6,7,8,9,10,11]
 
 from machine import Pin
-import _thread, time
+from time import sleep_ms
+from _thread import start_new_thread
 
 gates = []
 
@@ -15,13 +16,22 @@ def runGates():
               pinO.value((pinA.value() and pinB.value()))
           elif op=='!':
               pinO.value(not pinA.value())
-      time.sleep(1)
+      sleep_ms(10)
 
-def pinSafetyCheck(pin:int):
-    if pin in FLASHING_PINS:
+def setPin(pin:str, mode:int, value=None):
+    pin_num = int(pin)
+
+    if pin_num in FLASHING_PINS:
         raise ValueError('Cannot use pins used for flashing or debugging.')
-    elif pin in MEMORY_PINS:
+    elif pin_num in MEMORY_PINS:
         raise ValueError('Cannot use pins connected to flash memory.')
+    
+    elif (value is not None) and (mode==Pin.OUT):
+        if value not in (0,1):
+            raise ValueError('Output pin value must be 0 or 1.')
+        return Pin(pin_num, mode, value=value)
+    else:
+        return Pin(pin_num, mode)
 
 def main():
     while True:
@@ -40,30 +50,17 @@ def main():
                         "Set Commands"
                         if count == 3:
                             "Set Pin Command"
-                            pin = int(params[0])
-                            pinSafetyCheck(pin)
-
-                            state = params[2]=='x'
-                            p = Pin(pin, Pin.IN if state else Pin.OUT)
-                            if not state:
-                                if   params[2]=='1':
-                                    p.on()
-                                elif params[2]=='0':
-                                    p.off()
-                                else:
-                                    raise TypeError("Can only set pin to 1, 0 or X")
+                            if params[2]=='x':
+                                setPin(params[0], Pin.IN)
+                            else:
+                                setPin(params[0], Pin.OUT, value=int(params[2]))
                             print('OK')
                         
                         elif count == 5:        
                             if params[1]=='+':
                                 "Set OR gate command"
-                                a, b, o = int(params[0]), int(params[2]), int(params[4])
-                                pinSafetyCheck(a)
-                                pinSafetyCheck(b)
-                                pinSafetyCheck(o)
-                                
-                                pinA, pinB = Pin(a, Pin.IN), Pin(b, Pin.IN)
-                                pinO = Pin(o, Pin.OUT, value=(pinA.value() or pinB.value()))
+                                pinA, pinB = setPin(params[0], Pin.IN), setPin(params[2], Pin.IN)
+                                pinO = setPin(params[4], Pin.OUT, value=(pinA.value() or pinB.value()))
 
                                 gates.append((pinA, pinB, '+', pinO))
                                 print('OK')
@@ -90,6 +87,6 @@ def main():
             print('?')
     
 if __name__ == '__main__':
-    _thread.start_new_thread(runGates, ())
+    start_new_thread(runGates, ())
     print()
     main()
