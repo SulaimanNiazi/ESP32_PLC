@@ -9,14 +9,16 @@ gates = []
 
 def runGates():
     while True:
-      for (pinA , pinB, op, pinO) in gates:
-          if   op=='+':
-              pinO.value((pinA.value() or pinB.value()))
-          elif op=='*':
-              pinO.value((pinA.value() and pinB.value()))
-          elif op=='!':
-              pinO.value(not pinA.value())
-      sleep_ms(10)
+        sleep_ms(10)
+        for (pinA , pinB, op, pinO) in gates:
+            if   op=='+':
+                pinO.value((pinA.value() or pinB.value()))
+            elif op=='*':
+                pinO.value((pinA.value() and pinB.value()))
+            elif op=='!':
+                pinO.value(not pinA.value())
+            elif op=='=':
+                pinO.value(pinA.value())
 
 def setPin(pin:str, mode:int, value=None):
     pin_num = int(pin)
@@ -25,10 +27,8 @@ def setPin(pin:str, mode:int, value=None):
         raise ValueError('Cannot use pins used for flashing or debugging.')
     elif pin_num in MEMORY_PINS:
         raise ValueError('Cannot use pins connected to flash memory.')
-    
-    elif (value is not None) and (mode==Pin.OUT):
-        if value not in (0,1):
-            raise ValueError('Output pin value must be 0 or 1.')
+
+    elif mode==Pin.OUT:
         return Pin(pin_num, mode, value=value)
     else:
         return Pin(pin_num, mode)
@@ -36,7 +36,7 @@ def setPin(pin:str, mode:int, value=None):
 def main():
     while True:
         line = input('> ').lower().strip()
-        
+
         if line:
             params = line.split(' ')
             debug = params[-1]=='?'
@@ -53,7 +53,12 @@ def main():
                             if params[2]=='x':
                                 setPin(params[0], Pin.IN)
                             else:
-                                setPin(params[0], Pin.OUT, value=int(params[2]))
+                                pinA = setPin(params[0], Pin.OUT)
+                                num = int(params[2])
+                                if num in (0,1):
+                                    pinA.value(num)
+                                else:
+                                    gates.append((pinA, None, '=', setPin(params[2], Pin.OUT, value=pinA.value())))
                             print('OK')
                         
                         elif count == 5:        
@@ -64,7 +69,7 @@ def main():
 
                                 gates.append((pinA, pinB, '+', pinO))
                                 print('OK')
-                            
+
                             else:
                                 raise TypeError('Invalid Operator')
                         else:
@@ -73,7 +78,7 @@ def main():
                     if count==1:
                         if (params[0]=='gates') and debug:
                             print("OK",f"\n{gates}")
-                        
+
                         else:
                             raise ValueError('Invalid value')
                     else:
@@ -85,7 +90,7 @@ def main():
                     print('?')
         else:
             print('?')
-    
+
 if __name__ == '__main__':
     start_new_thread(runGates, ())
     print()
