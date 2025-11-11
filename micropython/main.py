@@ -80,6 +80,14 @@ def main():
                                 else:
                                     setGate(params[2], None, '', params[0])
                             print('OK')
+
+                        elif count == 4:
+                            if params[1:3]==['=', '!']:
+                                "Set NOT gate command"
+                                setGate(params[3], None, '!', params[0])
+                                print('OK')
+                            else:
+                                raise SyntaxError('Invalid syntax')
                         
                         elif count == 5:        
                             if params[3]=='+':
