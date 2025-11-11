@@ -31,17 +31,28 @@ def setPin(pin:str, mode:int, value=None):
     if mode==Pin.OUT:
         return Pin(id, mode, value=value)
     else:
+        for (pinA , pinB, op, pinO) in gates:
+            pin_name = f'{pinO}'
+            pin_id = pin_name[pin_name.find('(')+1:pin_name.find(')')]
+            if pin_id==pin:
+                gates.remove((pinA , pinB, op, pinO))
+                break
         return Pin(id, mode)
     
-def setGate(pinA:Pin, pinB:Pin, op:str, pinO:Pin):
-    new = (pinA, pinB, op, pinO)
+def setGate(in1:str, in2:str, op:str, out:str):
+    pinA, pinB, pinO = setPin(in1, Pin.IN), setPin(in2, Pin.IN) if in2 else None, setPin(out, Pin.OUT)
+    newGate = (pinA, pinB, op, pinO)
     
-    if new in gates:
+    if (newGate in gates) or ((pinB, pinA, op, pinO) in gates):
         raise ValueError('Gate already exists.')
     elif pinA==pinO or pinB==pinO:
         raise ValueError('Output pin cannot be the same as input pin(s).')
-    
-    gates.append(new)
+    else:
+        for (oldPinA , oldPinB, oldOp, oldPinO) in gates:
+            if oldPinO==pinO:
+                gates.remove((oldPinA , oldPinB, oldOp, oldPinO))
+                break
+    gates.append(newGate)
 
 def main():
     while True:
@@ -68,15 +79,13 @@ def main():
                                 if num in (0,1):
                                     pinA.value(num)
                                 else:
-                                    setGate(pinA, None, '=', setPin(params[2], Pin.OUT, value=pinA.value()))
+                                    setGate(params[0], None, '=', params[2])
                             print('OK')
                         
                         elif count == 5:        
                             if params[1]=='+':
                                 "Set OR gate command"
-                                pinA, pinB = setPin(params[0], Pin.IN), setPin(params[2], Pin.IN)
-                                pinO = setPin(params[4], Pin.OUT, value=(pinA.value() or pinB.value()))
-                                setGate(pinA, pinB, '+', pinO)
+                                setGate(params[0], params[2], '+', params[4])
                                 print('OK')
 
                             else:
