@@ -62,17 +62,22 @@ def setGate(in1:str, in2:str, op:str, out:str):
 def main():
     while True:
         line = input('> ').lower().strip()
-
         if line:
             params = line.split(' ')
+            
             debug = params[-1]=='?'
             if debug:
                 params.pop()
+            
             count = len(params)
             
             try:
                 if line[0].isdigit():
-                    if count > 2 and params[1]=='=':
+                    if count == 1:
+                        "Read Pin Command"
+                        print(f'OK\n{Pin(int(params[0])).value()}')
+
+                    elif params[1]=='=':
                         "Set Commands"
                         if count == 3:
                             "Set Pin Command"
@@ -92,6 +97,7 @@ def main():
                                 "Set NOT gate command"
                                 setGate(params[3], None, '!', params[0])
                                 print('OK')
+
                             else:
                                 raise SyntaxError('Invalid syntax')
                         
@@ -108,6 +114,7 @@ def main():
                                 "Set XOR gate command"
                                 setGate(params[4], params[2], '^', params[0])
                                 print('OK')
+
                             else:
                                 raise TypeError('Invalid Operator')
                         else:
