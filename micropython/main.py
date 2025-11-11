@@ -86,6 +86,10 @@ def main():
                                 "Set OR gate command"
                                 setGate(params[4], params[2], '+', params[0])
                                 print('OK')
+                            elif params[3]=='*':
+                                "Set AND gate command"
+                                setGate(params[4], params[2], '*', params[0])
+                                print('OK')
 
                             else:
                                 raise TypeError('Invalid Operator')
@@ -97,8 +101,11 @@ def main():
                     if count==1:
                         if params[0]=='gates' and debug:
                             print('OK')
-                            for (pinA , pinB, op, pinO) in gates:
-                                print(f'{pinO} = {pinA} {op} {pinB}' if pinB else f'{pinO} = {op}{pinA}')
+                            if not gates:
+                                print('NONE')
+                            else:
+                                for (pinA , pinB, op, pinO) in gates:
+                                    print(f'{pinO} = {pinA} {op} {pinB}' if pinB else f'{pinO} = {op}{pinA}')
                         elif params[0]=='reset':
                             print('OK')
                             reset()
