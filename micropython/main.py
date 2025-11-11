@@ -1,7 +1,7 @@
 FLASHING_PINS = [1,3]
 MEMORY_PINS   = [6,7,8,9,10,11]
 
-from machine import Pin
+from machine import Pin, reset
 from time import sleep_us
 from _thread import start_new_thread
 
@@ -96,8 +96,12 @@ def main():
                 else:
                     if count==1:
                         if params[0]=='gates' and debug:
+                            print('OK')
                             for (pinA , pinB, op, pinO) in gates:
                                 print(f'{pinO} = {pinA} {op} {pinB}' if pinB else f'{pinO} = {op}{pinA}')
+                        elif params[0]=='reset':
+                            print('OK')
+                            reset()
 
                         else:
                             raise ValueError('Invalid value')
