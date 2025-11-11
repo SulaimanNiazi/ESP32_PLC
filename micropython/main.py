@@ -17,7 +17,7 @@ def runGates():
                 pinO.value((pinA.value() and pinB.value()))
             elif op=='!':
                 pinO.value(not pinA.value())
-            elif op=='=':
+            elif op=='':
                 pinO.value(pinA.value())
 
 def setPin(pin:str, mode:int, value=None):
@@ -32,11 +32,10 @@ def setPin(pin:str, mode:int, value=None):
         return Pin(id, mode, value=value)
     else:
         for (pinA , pinB, op, pinO) in gates:
-            pin_name = f'{pinO}'
-            pin_id = pin_name[pin_name.find('(')+1:pin_name.find(')')]
-            if pin_id==pin:
-                gates.remove((pinA , pinB, op, pinO))
-                break
+            pinO_name = f'{pinO}'
+            pinO_id = pinO_name[pinO_name.find('(')+1:pinO_name.find(')')]
+            if pinO_id==pin:
+                return Pin(id, Pin.OUT)
         return Pin(id, mode)
     
 def setGate(in1:str, in2:str, op:str, out:str):
@@ -79,7 +78,7 @@ def main():
                                 if num in (0,1):
                                     pinA.value(num)
                                 else:
-                                    setGate(params[2], None, '=', params[0])
+                                    setGate(params[2], None, '', params[0])
                             print('OK')
                         
                         elif count == 5:        
@@ -97,7 +96,8 @@ def main():
                 else:
                     if count==1:
                         if params[0]=='gates' and debug:
-                            print("OK",f"\n{gates}")
+                            for (pinA , pinB, op, pinO) in gates:
+                                print(f'{pinO} = {pinA} {op} {pinB}' if pinB else f'{pinO} = {op}{pinA}')
 
                         else:
                             raise ValueError('Invalid value')
