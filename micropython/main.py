@@ -26,9 +26,9 @@ def setPin(pin:str, mode:int, value=None, force:bool=False):
     id = int(pin)
 
     if id in FLASHING_PINS:
-        raise ValueError('Cannot use pins used for flashing or debugging.')
+        raise ValueError('Value Error: This pin is used for flashing or debugging.')
     elif id in MEMORY_PINS:
-        raise ValueError('Cannot use pins connected to flash memory.')
+        raise ValueError('Value Error: This pin is connected to flash memory.')
 
     if mode==Pin.OUT:
         return Pin(id, mode, value=value)
@@ -49,9 +49,9 @@ def setGate(in1:str, in2:str, op:str, out:str):
     newGate = (pinA, pinB, op, pinO)
     
     if (newGate in gates) or ((pinB, pinA, op, pinO) in gates):
-        raise ValueError('Gate already exists.')
+        raise ValueError('Value Error: This gate already exists.')
     elif pinA==pinO or pinB==pinO:
-        raise ValueError('Output pin cannot be the same as input pin(s).')
+        raise ValueError('Value Error: Cannot directly connect the output pin to any input pin.')
     else:
         for (oldPinA , oldPinB, oldOp, oldPinO) in gates:
             if oldPinO==pinO:
@@ -65,6 +65,10 @@ def main():
         if line:
             params = line.split(' ')
             
+            for param in params:
+                if not param:
+                    params.remove(param)
+
             debug = params[-1]=='?'
             if debug:
                 params.pop()
@@ -93,13 +97,13 @@ def main():
                             print('OK')
 
                         elif count == 4:
-                            if params[2]==['!']:
+                            if params[2]=='!':
                                 "Set NOT gate command"
                                 setGate(params[3], None, '!', params[0])
                                 print('OK')
 
                             else:
-                                raise SyntaxError('Invalid syntax')
+                                raise SyntaxError(f'Syntax Error: "!" is expected as the operator for a gate with one input, not "{params[2]}".')
                         
                         elif count == 5:        
                             if params[3]=='+':
@@ -116,14 +120,16 @@ def main():
                                 print('OK')
 
                             else:
-                                raise TypeError('Invalid Operator')
+                                raise TypeError(f'Type Error: "{params[3]}" is an invalid operator for a gate with two inputs.')
                         else:
-                            raise SyntaxError('Invalid amount of parameters')
+                            raise SyntaxError(f'Syntax Error: {count} parameters are {"too less" if (count<3) else "too many"} for a set command.')
                     else:
-                        raise SyntaxError('Invalid syntax')
+                        raise SyntaxError(f'Syntax Error: "=" is expected as the second parameter, not "{params[1]}".')
                 else:
-                    if count==1:
-                        if params[0]=='gates' and debug:
+                    if count==0:
+                        raise SyntaxError('No command entered.')
+                    elif count==1:
+                        if params[0]=='gates':
                             print('OK')
                             if not gates:
                                 print('NONE')
@@ -133,11 +139,48 @@ def main():
                         elif params[0]=='reset':
                             print('OK')
                             reset()
+                        elif params[0]=='help':
+                            print('OK')
+                            print("""
+# Pin Safety
+
+The following pins are **protected** to prevent interference with flash memory or serial programming:
+
+| Type         | Pins |
+| ------------ | ---- |
+| Flash/Debug  | 1, 3 |
+| Flash Memory | 6-11 |
+
+Any attempt to use these pins will result in an error.
+Furthermore:
+- Directly shorting the gates inputs and outputs or duplicating gates will result in error.
+- Overwriting output pins will result in the deletion/replacement of gates.
+- Add `?` at the end of any command for **debug mode** to show detailed error messages.
+
+# Example Session
+
+> 15 = 12 + 13
+OK
+> 13 = 1
+OK
+> 15
+OK
+1
+> GATES
+OK
+Pin(15) = Pin(12) + Pin(13)
+> 15 = x
+> gates
+OK
+NONE
+> reset
+OK
+                                  """)
 
                         else:
-                            raise ValueError('Invalid value')
+                            raise ValueError(f'Value Error: "{params[0]}" is an unknown command.')
                     else:
-                        raise SyntaxError('Invalid amount of parameters')
+                        raise SyntaxError(f'Syntax Error: The entered value "{params[0]}" does not take {count} parameters.')
             except Exception as e:
                 if debug:
                     print(e)

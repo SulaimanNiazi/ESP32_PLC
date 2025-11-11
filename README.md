@@ -1,13 +1,15 @@
 # ⚙️ ESP32_PLC  
+
 ![Python](https://img.shields.io/badge/MicroPython-1.20%2B-blue?logo=python&logoColor=white)
 ![ESP32](https://img.shields.io/badge/Board-ESP32--WROOM32-orange?logo=espressif)
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 
-### 🧠 Turn your ESP32 into a tiny **Programmable Logic Controller (PLC)** powered by MicroPython.
+🧠 Turn your ESP32 into a tiny **Programmable Logic Controller (PLC)** powered by MicroPython.
 
 ---
 
 ## 🪄 Overview  
+
 **ESP32_PLC** transforms your ESP32-WROOM-32 into a **fully programmable logic controller (PLC)**.  
 You can control and interconnect GPIOs using **simple terminal commands** — define AND, OR, XOR, and NOT gates, or directly wire signals together in real-time.  
 
@@ -16,14 +18,16 @@ Once uploaded as `main.py`, the ESP32 automatically boots into PLC mode and star
 ---
 
 ## ✨ Features  
+
 ✅ Command-line interface (CLI) via UART or REPL  
 ✅ Real-time logic execution in a background thread  
 ✅ Supports logic gates:
+
 - ➕ **OR** (`+`)
 - ✖️ **AND** (`*`)
 - ⛔ **NOT** (`!`)
 - ⚡ **XOR** (`^`)
-- ➡️ **Direct wire** (`=`)
+- ➡️ **One Way Wire (diode)** (`=`)
 
 ✅ Pin protection for flashing/memory lines  
 ✅ Dynamic reconfiguration without reboot  
@@ -32,7 +36,7 @@ Once uploaded as `main.py`, the ESP32 automatically boots into PLC mode and star
 ---
 
 <details>
-<summary>📋 <b>Supported Commands</b></summary>
+<summary>📋<b>Supported Commands</b></summary>
 
 | Command | Description | Example |
 |----------|-------------|----------|
@@ -42,7 +46,7 @@ Once uploaded as `main.py`, the ESP32 automatically boots into PLC mode and star
 | `pin = in1 + in2` | OR gate | `15 = 12 + 13` |
 | `pin = in1 * in2` | AND gate | `16 = 12 * 13` |
 | `pin = in1 ^ in2` | XOR gate | `17 = 12 ^ 13` |
-| `gates ?` | List configured gates | `gates ?` |
+| `gates ?` | List configured gates | `gates` |
 | `reset` | Restart the ESP32 | `reset` |
 
 💡 Add `?` at the end of any command for **debug mode** to show detailed error messages.
@@ -53,17 +57,23 @@ Once uploaded as `main.py`, the ESP32 automatically boots into PLC mode and star
 ## 🧠 Example Session
 
 ```text
-> 12 = x
-OK
-> 13 = x
-OK
 > 15 = 12 + 13
 OK
-> gates ?
+> 13 = 1
+OK
+> 15
+OK
+1
+> GATES
 OK
 Pin(15) = Pin(12) + Pin(13)
+> 15 = x
+> gates
+OK
+NONE
 > reset
 OK
+```
 
 ---
 
@@ -71,11 +81,11 @@ OK
 
 ### 1️⃣ Flash MicroPython
 
-Use [esptool.py](https://docs.espressif.com/projects/esptool/en/latest/esp32/installation.html) to flash MicroPython on your ESP32:
+Use [esptool.py](https://docs.espressif.com/projects/esptool/en/latest/esp32/installation.html) to flash [MicroPython firmware](https://micropython.org/download/ESP32_GENERIC/) on your ESP32:
 
 ```bash
 esptool -p COMx erase-flash
-esptool -p COMx -b 460800 write-flash 0x1000 ESP32_GENERIC-v1.xx.x.bin
+esptool -p COMx write-flash 0x1000 ESP32_GENERIC-v1.xx.x.bin
 ```
 
 ### 2️⃣ Upload the Script
@@ -96,9 +106,10 @@ The following pins are **protected** to prevent interference with flash memory o
 | Type         | Pins |
 | ------------ | ---- |
 | Flash/Debug  | 1, 3 |
-| Flash Memory | 6–11 |
+| Flash Memory | 6-11 |
 
 Any attempt to use these pins will result in an error.
 Furthermore:
-. Directly shorting the gates inputs and outputs or duplicating gates will result in error.
-. Overwriting output pins will result in the deletion/replacement of gates.
+
+- Directly shorting the gates inputs and outputs or duplicating gates will result in error.
+- Overwriting output pins will result in the deletion/replacement of gates.
