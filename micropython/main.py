@@ -17,10 +17,12 @@ def runGates():
                 pinO.value((pinA.value() and pinB.value()))
             elif op=='!':
                 pinO.value(not pinA.value())
+            elif op=='^':
+                pinO.value(pinA.value() ^ pinB.value())
             elif op=='':
                 pinO.value(pinA.value())
 
-def setPin(pin:str, mode:int, value=None):
+def setPin(pin:str, mode:int, value=None, force:bool=False):
     id = int(pin)
 
     if id in FLASHING_PINS:
@@ -35,7 +37,11 @@ def setPin(pin:str, mode:int, value=None):
             pinO_name = f'{pinO}'
             pinO_id = pinO_name[pinO_name.find('(')+1:pinO_name.find(')')]
             if pinO_id==pin:
-                return Pin(id, Pin.OUT)
+                if force:
+                    gates.remove((pinA , pinB, op, pinO))
+                    break
+                else:
+                    return Pin(id, Pin.OUT)
         return Pin(id, mode)
     
 def setGate(in1:str, in2:str, op:str, out:str):
@@ -71,7 +77,7 @@ def main():
                         if count == 3:
                             "Set Pin Command"
                             if params[2]=='x':
-                                setPin(params[0], Pin.IN)
+                                setPin(params[0], Pin.IN, force=True)
                             else:
                                 pinA = setPin(params[0], Pin.OUT)
                                 num = int(params[2])
@@ -82,7 +88,7 @@ def main():
                             print('OK')
 
                         elif count == 4:
-                            if params[1:3]==['=', '!']:
+                            if params[2]==['!']:
                                 "Set NOT gate command"
                                 setGate(params[3], None, '!', params[0])
                                 print('OK')
@@ -98,7 +104,10 @@ def main():
                                 "Set AND gate command"
                                 setGate(params[4], params[2], '*', params[0])
                                 print('OK')
-
+                            elif params[3]=='^':
+                                "Set XOR gate command"
+                                setGate(params[4], params[2], '^', params[0])
+                                print('OK')
                             else:
                                 raise TypeError('Invalid Operator')
                         else:
