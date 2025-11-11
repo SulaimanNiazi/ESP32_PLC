@@ -67,7 +67,7 @@ def main():
             
             try:
                 if line[0].isdigit():
-                    if count > 2 and params[-2]=='=':
+                    if count > 2 and params[1]=='=':
                         "Set Commands"
                         if count == 3:
                             "Set Pin Command"
@@ -79,19 +79,21 @@ def main():
                                 if num in (0,1):
                                     pinA.value(num)
                                 else:
-                                    setGate(params[0], None, '=', params[2])
+                                    setGate(params[2], None, '=', params[0])
                             print('OK')
                         
                         elif count == 5:        
-                            if params[1]=='+':
+                            if params[3]=='+':
                                 "Set OR gate command"
-                                setGate(params[0], params[2], '+', params[4])
+                                setGate(params[4], params[2], '+', params[0])
                                 print('OK')
 
                             else:
                                 raise TypeError('Invalid Operator')
                         else:
                             raise SyntaxError('Invalid amount of parameters')
+                    else:
+                        raise SyntaxError('Invalid syntax')
                 else:
                     if count==1:
                         if params[0]=='gates' and debug:
