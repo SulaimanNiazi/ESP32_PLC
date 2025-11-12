@@ -62,8 +62,6 @@ Once uploaded as `main.py`, the ESP32 automatically boots into PLC mode and star
 ```text
 > 15 = 12 + 13
 OK
-> 14 = ! 12 + 13
-OK
 > 13 = 1
 OK
 > 15
@@ -72,10 +70,7 @@ OK
 > GATES
 OK
 Pin(15) = Pin(12) + Pin(13)
-Pin(14) = !(Pin(12) + Pin(13))
 > 15 = x
-OK
-> 14 = x
 OK
 > gates
 OK
