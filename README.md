@@ -42,10 +42,13 @@ Once uploaded as `main.py`, the ESP32 automatically boots into PLC mode and star
 |----------|-------------|----------|
 | `pin` | Read digital input | `12` |
 | `pin = value` | Set output pin (0, 1, or X for input) | `12 = 1` / `12 = x` |
-| `pin = !in` | NOT gate | `13 = !12` |
+| `pin = ! in` | NOT gate | `13 = ! 12` |
 | `pin = in1 + in2` | OR gate | `15 = 12 + 13` |
 | `pin = in1 * in2` | AND gate | `16 = 12 * 13` |
 | `pin = in1 ^ in2` | XOR gate | `17 = 12 ^ 13` |
+| `pin = ! in1 + in2` | NOR gate | `15 = ! 12 + 13` |
+| `pin = ! in1 * in2` | NAND gate | `16 = ! 12 * 13` |
+| `pin = ! in1 ^ in2` | XNOR gate | `17 = ! 12 ^ 13` |
 | `gates ?` | List configured gates | `gates` |
 | `reset` | Restart the ESP32 | `reset` |
 
@@ -59,6 +62,8 @@ Once uploaded as `main.py`, the ESP32 automatically boots into PLC mode and star
 ```text
 > 15 = 12 + 13
 OK
+> 14 = ! 12 + 13
+OK
 > 13 = 1
 OK
 > 15
@@ -67,7 +72,11 @@ OK
 > GATES
 OK
 Pin(15) = Pin(12) + Pin(13)
+Pin(14) = !(Pin(12) + Pin(13))
 > 15 = x
+OK
+> 14 = x
+OK
 > gates
 OK
 NONE
@@ -109,6 +118,7 @@ The following pins are **protected** to prevent interference with flash memory o
 | Flash Memory | 6-11 |
 
 Any attempt to use these pins will result in an error.
+
 Furthermore:
 
 - Directly shorting the gates inputs and outputs or duplicating gates will result in error.
