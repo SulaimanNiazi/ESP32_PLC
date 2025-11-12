@@ -10,7 +10,7 @@ gates = []
 def runGates():
     while True:
         sleep_us(1)
-        for (pinA, pinB, op, pinO, inv) in gates:
+        for pinA, pinB, op, pinO, inv in gates:
             if   op == '+': val = pinA.value() or pinB.value()
             elif op == '*': val = pinA.value() and pinB.value()
             elif op == '^': val = pinA.value() ^ pinB.value()
@@ -40,16 +40,23 @@ def setGate(in1:str, in2:str, op:str, out:str, inv:bool=False):
     gate = (pinA, pinB, op, pinO, inv)
     
     if (gate in gates) or ((pinB, pinA, op, pinO, inv) in gates): raise ValueError('Value Error: This gate already exists.')
-    elif pinO in [pinA, pinB]: raise ValueError('Value Error: Cannot directly connect the output pin to any input pin.')
+    elif pinO in (pinA, pinB): raise ValueError('Value Error: Cannot directly connect the output pin to any input pin.')
     else: gates = [g for g in gates if g[3] != pinO]
     
     gates.append(gate)
 
 def main():
+    output = '?'
+
+    def display(text:str):
+        nonlocal output
+        output=text
+        print(output)
+
     while True:
-        line = input('> ').lower().strip()
-        if line:
-            params = [p for p in line.split(' ') if p != '']
+        entry = input('> ').lower().strip()
+        if entry:
+            params = [p for p in entry.split(' ') if p != '']
             debug = params[-1] == '?'
 
             if debug: params.pop()
@@ -57,8 +64,8 @@ def main():
             count = len(params)
             
             try:
-                if line[0].isdigit():
-                    if count == 1: print(f'OK\n{Pin(int(params[0])).value()}')
+                if entry[0].isdigit():
+                    if count == 1: display(f'OK\n{Pin(int(params[0])).value()}')
 
                     elif params[1] == '=':
                         inv = params[2] == '!'
@@ -74,24 +81,26 @@ def main():
                                 pinA.value(num) if num in (0,1) else setGate(params[2], None, '', params[0], inv)
 
                         elif count == 5:
-                            if params[3] in ['+', '*', '^']: setGate(params[4], params[2], params[3], params[0], inv) 
+                            if params[3] in ('+', '*', '^'): setGate(params[2], params[4], params[3], params[0], inv) 
 
                             else: raise TypeError(f'Type Error: "{params[3]}" is an invalid operator for a gate.')
                         else: raise SyntaxError(f'Syntax Error: {count} parameters are {"too less" if (count<3) else "too many"} for a set command.')
-                        print('OK')
+                        display('OK')
                     else: raise SyntaxError(f'Syntax Error: "=" is expected as the second parameter, not "{params[1]}".')
                 else:
                     if count == 0: raise SyntaxError('No command entered.')
 
                     elif count == 1:
                         if params[0] == 'gates':
-                            print('OK')
-                            if not gates: print('NONE')
+                            if not gates: display('OK\nNONE')
                             else:
-                                for (pinA, pinB, op, pinO, inv) in gates:
-                                    eq = f'{pinA}'
-                                    if pinB: eq += f' {op} {pinB}'
-                                    print(f'{pinO} = ' + (f'! ({eq})' if inv else eq))
+                                # line = ''
+                                # for pinA, pinB, op, pinO, inv in gates:
+                                #     eq = f'{pinA}'
+                                #     if pinB: eq += f' {op} {pinB}'
+                                #     line += f'{pinO} = ' + (f'! ({eq})' if inv else eq) + '\n'
+                                line = 'OK\n'+'\n'.join(f'{pinO} = {'!( ' if inv else ''}{pinA}' + (f' {op} {pinB}' if pinB else '') + (' )' if inv else '') for pinA, pinB, op, pinO, inv in gates)
+                                display(line)
 
                         elif params[0] == 'reset':
                             print('OK')
@@ -102,8 +111,8 @@ def main():
 
                         else: raise ValueError(f'Value Error: "{params[0]}" is an unknown command.')
                     else: raise SyntaxError(f'Syntax Error: The entered value "{params[0]}" does not take {count} parameters.')
-            except Exception as e: print(e if debug else '?')
-        else: print('?')
+            except Exception as e: display(e if debug else '?')
+        else: print(output)
 
 if __name__ == '__main__':
     start_new_thread(runGates, ())
