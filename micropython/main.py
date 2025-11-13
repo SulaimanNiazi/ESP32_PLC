@@ -56,7 +56,7 @@ def main():
     while True:
         entry = input('> ').lower().strip()
         if entry:
-            params = [p for p in entry.split(' ') if p != '']
+            params = [p for p in entry.split(' ') if p]
             debug = params[-1] == '?'
 
             if debug: params.pop()
@@ -94,12 +94,12 @@ def main():
                         if params[0] == 'gates':
                             if not gates: display('OK\nNONE')
                             else:
-                                # line = ''
-                                # for pinA, pinB, op, pinO, inv in gates:
-                                #     eq = f'{pinA}'
-                                #     if pinB: eq += f' {op} {pinB}'
-                                #     line += f'{pinO} = ' + (f'! ({eq})' if inv else eq) + '\n'
-                                line = 'OK\n'+'\n'.join(f'{pinO} = {'!( ' if inv else ''}{pinA}' + (f' {op} {pinB}' if pinB else '') + (' )' if inv else '') for pinA, pinB, op, pinO, inv in gates)
+                                line = ''
+                                for pinA, pinB, op, pinO, inv in gates:
+                                    eq = f'{pinA}'
+                                    if pinB: eq += f' {op} {pinB}'
+                                    if inv:  eq  = f'!({eq})'
+                                    line += f'{pinO} = ' + eq + '\n'
                                 display(line)
 
                         elif params[0] == 'reset':
