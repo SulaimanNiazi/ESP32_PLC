@@ -6,6 +6,7 @@ from time import sleep_us
 from _thread import start_new_thread
 
 gates = []
+OPERATOR_ORDER = ('!', '*', '^', '+')
 
 def solve(eq:list[str]):
     def subSolve(param1:str, op:str, param2:str='0'):
@@ -22,7 +23,8 @@ def solve(eq:list[str]):
             eq.pop(ind)
             val = int(eq[ind])
             eq[ind] = '0' if val else '1'
-    for op in ('*', '^', '+'):
+    
+    for op in OPERATOR_ORDER[1:]:
         for ind in range(len(eq)-2, -1, -1):
             if eq[ind+1]==op:
                 param1 = eq.pop(ind+2)
@@ -91,19 +93,27 @@ def main():
                     if count == 1: display(f'OK\n{Pin(int(params[0])).value()}')
 
                     elif params[1] == '=':
+                        
                         eq = params[2:]
-
-                        layers = eq.count('(')
-                        if layers != eq.count(')'): raise SyntaxError('Bracket Error')
-                        else: print('layers:', layers)
-
-                        inputs = list(set([p for p in eq if p not in ('*', '+', '^', '!', '(', ')')]))
+                        inputs = []
+                        layers = layer = 0
+                        
+                        for p in eq:
+                            if p == '(': 
+                                layers += 1
+                                layer += 1
+                            elif p == ')':
+                                layer -= 1
+                                if layer < 0: raise SyntaxError("Syntax Error: Unopened brackets found.")
+                            elif p.isdigit() and p not in inputs: 
+                                pin = setPin(p, Pin.IN)
+                                inputs.append(pin)
+                            elif p not in OPERATOR_ORDER: raise SyntaxError(f"Syntax Error: Unknown parameter '{p}' found.")
+                        if layer > 0: raise SyntaxError("Syntax Error: Unclosed brackets found.")
 
                         for pin in inputs: 
-                            value = str(setPin(pin, Pin.IN).value())
+                            value = str(pin.value())
                             eq = [value if p==pin else p for p in eq]
-
-                        print(eq)
 
                         while layers:
                             ind2 = eq.index(')')
@@ -112,6 +122,7 @@ def main():
                             layers-=1
 
                         setPin(params[0], Pin.OUT, int(solve(eq)[0]))
+
                     else: raise SyntaxError(f'Syntax Error: "=" is expected as the second parameter, not "{params[1]}".')
                 else:
                     if count == 0: raise SyntaxError('No command entered.')
@@ -135,7 +146,15 @@ def main():
                         elif params[0] == 'help':
                             with open('README.txt', 'r') as f: print("OK\n" + f.read())
 
-                        else: raise ValueError(f'Value Error: "{params[0]}" is an unknown command.')
+                        else: raise SyntaxError(f'Syntax Error: "{params[0]}" is an unknown command.')
+                    
+                    elif count == 2:
+                        if params[1].isdigit():
+                            pin = setPin(params[1], Pin.OUT)
+                            if   params[0] == 'set'  : pin.value(1)
+                            elif params[0] == 'reset': pin.value(0)
+
+                            else: raise SyntaxError(f'Syntax Error: "{params[0]}" is an unknown command.')
                     else: raise SyntaxError(f'Syntax Error: The entered value "{params[0]}" does not take {count} parameters.')
             except Exception as e: display(e if debug else '?')
         else: print(output)
