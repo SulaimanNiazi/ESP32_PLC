@@ -7,11 +7,6 @@ from _thread import start_new_thread
 
 gates = []
 
-def get(pin):
-    val = setPin(pin, Pin.IN).value()
-    print(f'{pin} = {val}')
-    return str(val)
-
 def solve(eq:list[str]):
     def subSolve(param1:str, op:str, param2:str='0'):
         val1, val2 = int(param1), int(param2)
@@ -104,9 +99,9 @@ def main():
 
                         inputs = list(set([p for p in eq if p not in ('*', '+', '^', '!', '(', ')')]))
 
-                        for param in inputs: 
-                            value = get(param)
-                            eq = [value if p==param else p for p in eq]
+                        for pin in inputs: 
+                            value = str(setPin(pin, Pin.IN).value())
+                            eq = [value if p==pin else p for p in eq]
 
                         print(eq)
 
@@ -116,7 +111,7 @@ def main():
                             eq = eq[:ind1] + solve(eq[ind1+1:ind2]) + eq[ind2+1:]
                             layers-=1
 
-                        print(solve(eq))
+                        setPin(params[0], Pin.OUT, int(solve(eq)[0]))
                     else: raise SyntaxError(f'Syntax Error: "=" is expected as the second parameter, not "{params[1]}".')
                 else:
                     if count == 0: raise SyntaxError('No command entered.')
