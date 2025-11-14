@@ -1,24 +1,81 @@
-FLASHING_PINS = [1,3]
-MEMORY_PINS   = [6,7,8,9,10,11]
+FLASHING_PINS  = (1,3)
+MEMORY_PINS    = (6,7,8,9,10,11)
+
+OPERATOR_ORDER = ('!', '*', '^', '+')
 
 from machine import Pin, reset
 from time import sleep_us
 from _thread import start_new_thread
 
-gates = []
+class Logic:
+    def __init__(self, exp):
+        self.eq = exp[2:]
+        self.inputs = []
+        self.ids = []
+        self.layers = layer = 0
+        
+        for p in self.eq:
+            if p == '(': 
+                self.layers += 1
+                layer += 1
+            elif p == ')':
+                layer -= 1
+                if layer < 0: raise SyntaxError("Syntax Error: Unopened brackets found.")
+            elif p.isdigit() and p not in self.inputs: 
+                pin = setPin(p, Pin.IN)
+                self.inputs.append(pin)
+                self.ids.append(p)
+            elif p not in OPERATOR_ORDER: raise SyntaxError(f"Syntax Error: Unknown parameter '{p}' found.")
+        if layer > 0: raise SyntaxError("Syntax Error: Unclosed brackets found.")
 
-def runGates():
+        self.output = setPin(exp[0], Pin.OUT)
+
+logics = []
+
+def solve(eq, layers=0):
+    def subSolve(param1, op, param2='0'):
+        val1, val2 = int(param1), int(param2)
+        if   op == '+': val = val1 or val2
+        elif op == '*': val = val1 and val2
+        elif op == '^': val = val1 ^ val2
+        elif op == '!': val = not val1
+        else: val = val1
+        return str(val)
+    
+    while layers:
+        ind2 = eq.index(')')
+        ind1 = ind2 - list(reversed(eq[:ind2+1])).index('(')
+        eq = eq[:ind1] + solve(eq[ind1+1:ind2]) + eq[ind2+1:]
+        layers-=1
+    
+    for ind in range(len(eq)-1, -1, -1):
+        if eq[ind] == '!':
+            eq.pop(ind)
+            val = int(eq[ind])
+            eq[ind] = '0' if val else '1'
+    
+    for op in OPERATOR_ORDER[1:]:
+        for ind in range(len(eq)-2, -1, -1):
+            if eq[ind+1]==op:
+                param1 = eq.pop(ind+2)
+                sign = eq.pop(ind+1)
+                eq[ind] = subSolve(eq[ind], sign, param1)
+    return eq
+
+def keepSolving():
     while True:
         sleep_us(1)
-        for pinA, pinB, op, pinO, inv in gates:
-            if   op == '+': val = pinA.value() or pinB.value()
-            elif op == '*': val = pinA.value() and pinB.value()
-            elif op == '^': val = pinA.value() ^ pinB.value()
-            elif op == '' : val = pinA.value()
-            if inv: val = not val
-            pinO.value(val)
+        for logic in logics:
+            eq = logic.eq
+            # if Pin(2, Pin.IN).value():
+            #     print(logic.ids)
+            #     print(logic.inputs)
+            for id, pin in zip(logic.ids, logic.inputs):
+                value = str(pin.value())
+                eq = [value if p==id else p for p in eq]
+            logic.output.value(int(solve(eq, logic.layers)[0]))
 
-def setPin(pin:str, mode:int, value:int=0, force:bool=False):
+def setPin(pin, mode, value=0, force=False):
     id = int(pin)
 
     if id in FLASHING_PINS: raise ValueError('Value Error: This pin is used for flashing or debugging.')
@@ -26,29 +83,29 @@ def setPin(pin:str, mode:int, value:int=0, force:bool=False):
 
     if mode == Pin.OUT: return Pin(id, mode, value=value)
     else:
-        for gate in gates:
-            if f'{gate[3]}'==f'Pin({id})': 
+        for logic in logics:
+            if f'{logic.output}'==f'Pin({id})': 
                 if force: 
-                    gates.remove(gate)
+                    logics.remove(logic)
                     break
                 else: return Pin(id, Pin.OUT)
         return Pin(id, mode)
     
-def setGate(in1:str, in2:str, op:str, out:str, inv:bool=False):
-    global gates
-    pinA, pinB, pinO = setPin(in1, Pin.IN), setPin(in2, Pin.IN) if in2 else None, setPin(out, Pin.OUT)
-    gate = (pinA, pinB, op, pinO, inv)
+# def setGate(in1:str, in2:str, op:str, out:str, inv:bool=False):
+#     global gates
+#     pinA, pinB, pinO = setPin(in1, Pin.IN), setPin(in2, Pin.IN) if in2 else None, setPin(out, Pin.OUT)
+#     gate = (pinA, pinB, op, pinO, inv)
     
-    if (gate in gates) or ((pinB, pinA, op, pinO, inv) in gates): raise ValueError('Value Error: This gate already exists.')
-    elif pinO in (pinA, pinB): raise ValueError('Value Error: Cannot directly connect the output pin to any input pin.')
-    else: gates = [g for g in gates if g[3] != pinO]
+#     if (gate in gates) or ((pinB, pinA, op, pinO, inv) in gates): raise ValueError('Value Error: This gate already exists.')
+#     elif pinO in (pinA, pinB): raise ValueError('Value Error: Cannot directly connect the output pin to any input pin.')
+#     else: gates = [g for g in gates if g[3] != pinO]
     
-    gates.append(gate)
+#     gates.append(gate)
 
 def main():
     output = '?'
 
-    def display(text:str):
+    def display(text):
         nonlocal output
         output=text
         print(output)
@@ -68,38 +125,22 @@ def main():
                     if count == 1: display(f'OK\n{Pin(int(params[0])).value()}')
 
                     elif params[1] == '=':
-                        inv = params[2] == '!'
-                        if inv:
-                            count -= 1
-                            params.pop(2)
-
-                        if count == 3:
-                            if params[2] == 'x': setPin(params[0], Pin.IN, force=True)
-                            else:
-                                pinA = setPin(params[0], Pin.OUT)
-                                num = int(params[2])
-                                pinA.value(num) if num in (0,1) else setGate(params[2], None, '', params[0], inv)
-
-                        elif count == 5:
-                            if params[3] in ('+', '*', '^'): setGate(params[2], params[4], params[3], params[0], inv) 
-
-                            else: raise TypeError(f'Type Error: "{params[3]}" is an invalid operator for a gate.')
-                        else: raise SyntaxError(f'Syntax Error: {count} parameters are {"too less" if (count<3) else "too many"} for a set command.')
+                        logic = Logic(params)
+                        logics.append(logic)
                         display('OK')
+
                     else: raise SyntaxError(f'Syntax Error: "=" is expected as the second parameter, not "{params[1]}".')
                 else:
                     if count == 0: raise SyntaxError('No command entered.')
 
                     elif count == 1:
-                        if params[0] == 'gates':
-                            if not gates: display('OK\nNONE')
+                        if params[0] == 'list':
+                            if not logics: display('OK\nNONE')
                             else:
-                                line = ''
-                                for pinA, pinB, op, pinO, inv in gates:
-                                    eq = f'{pinA}'
-                                    if pinB: eq += f' {op} {pinB}'
-                                    if inv:  eq  = f'!({eq})'
-                                    line += f'{pinO} = ' + eq + '\n'
+                                line = 'OK\n'
+                                for logic in logics:
+                                    eq = "".join(f'{p} ' for p in logic.eq)
+                                    line += f'{logic.output} = ' + eq + '\n'
                                 display(line)
 
                         elif params[0] == 'reset':
@@ -107,14 +148,25 @@ def main():
                             reset()
 
                         elif params[0] == 'help':
-                            with open('README.txt', 'r') as f: print("OK\n" + f.read())
+                            with open('README.txt', 'r') as f: display("OK\n" + f.read())
 
-                        else: raise ValueError(f'Value Error: "{params[0]}" is an unknown command.')
+                        else: raise SyntaxError(f'Syntax Error: "{params[0]}" is an unknown command.')
+                    
+                    elif count == 2:
+                        if params[1].isdigit():
+                            pin = setPin(params[1], Pin.OUT)
+                            if   params[0] == 'set'  : pin.value(1)
+                            elif params[0] == 'reset': pin.value(0)
+
+                            else: raise SyntaxError(f'Syntax Error: "{params[0]}" is an unknown command.')
+                            
+                            display('OK')
+                    
                     else: raise SyntaxError(f'Syntax Error: The entered value "{params[0]}" does not take {count} parameters.')
             except Exception as e: display(e if debug else '?')
         else: print(output)
 
 if __name__ == '__main__':
-    start_new_thread(runGates, ())
+    start_new_thread(keepSolving, ())
     print()
     main()

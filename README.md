@@ -40,17 +40,20 @@ Once uploaded as `main.py`, the ESP32 automatically boots into PLC mode and star
 
 | Command | Description | Example |
 |----------|-------------|----------|
-| `pin` | Read digital input | `12` |
-| `pin = value` | Set output pin (0, 1, or X for input) | `12 = 1` / `12 = x` |
-| `pin = ! in` | NOT gate | `13 = ! 12` |
-| `pin = in1 + in2` | OR gate | `15 = 12 + 13` |
-| `pin = in1 * in2` | AND gate | `16 = 12 * 13` |
-| `pin = in1 ^ in2` | XOR gate | `17 = 12 ^ 13` |
-| `pin = ! in1 + in2` | NOR gate | `15 = ! 12 + 13` |
-| `pin = ! in1 * in2` | NAND gate | `16 = ! 12 * 13` |
-| `pin = ! in1 ^ in2` | XNOR gate | `17 = ! 12 ^ 13` |
-| `gates ?` | List configured gates | `gates` |
-| `reset` | Restart the ESP32 | `reset` |
+| `<pin>` | Read digital input | `12` |
+| `<pin> = x` | Set input pin | `12 = x` |
+| `SET <pin>` | Set output pin as high | `SET 12` |
+| `RESET <pin>` | Set output pin as low | `RESET 12` |
+| `<pin> = ! <in>` | NOT gate | `13 = ! 12` |
+| `<pin> = <in1> + <in2>` | OR gate | `15 = 12 + 13` |
+| `<pin> = <in1> * <in2>` | AND gate | `16 = 12 * 13` |
+| `<pin> = <in1> ^ <in2>` | XOR gate | `17 = 12 ^ 13` |
+| `<pin> = ! <in1> + <in2>` | NOR gate | `15 = ! 12 + 13` |
+| `<pin> = ! <in1> * <in2>` | NAND gate | `16 = ! 12 * 13` |
+| `<pin> = ! <in1> ^ <in2>` | XNOR gate | `17 = ! 12 ^ 13` |
+| `<pin> = <Boolean Expression>` | Any Boolean Expression | `15 = 2 + ! ( 12 * 13 )` |
+| `LIST` | List configured gates | `LIST` |
+| `RESET` | Restart the ESP32 | `RESET` |
 
 💡 Add `?` at the end of any command for **debug mode** to show detailed error messages.
 </details>
@@ -60,22 +63,22 @@ Once uploaded as `main.py`, the ESP32 automatically boots into PLC mode and star
 ## 🧠 Example Session
 
 ```text
-> 15 = 12 + 13
+> 15 = 2 + ! ( 12 * 13 )
 OK
-> 13 = 1
+> SET 13
 OK
 > 15
 OK
 1
-> GATES
+> LIST
 OK
-Pin(15) = Pin(12) + Pin(13)
+Pin(15) = 2 + ! ( 12 * 13 )
 > 15 = x
 OK
-> gates
+> LIST
 OK
 NONE
-> reset
+> RESET
 OK
 ```
 
@@ -113,8 +116,3 @@ The following pins are **protected** to prevent interference with flash memory o
 | Flash Memory | 6-11 |
 
 Any attempt to use these pins will result in an error.
-
-Furthermore:
-
-- Directly shorting the gates inputs and outputs or duplicating gates will result in error.
-- Overwriting output pins will result in the deletion/replacement of gates.

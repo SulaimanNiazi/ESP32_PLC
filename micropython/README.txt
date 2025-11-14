@@ -17,7 +17,7 @@ Furthermore:
 
 > 15 = 12 + 13
 OK
-> 13 = 1
+> set 13
 OK
 > 15
 OK
@@ -27,7 +27,7 @@ OK
 Pin(15) = Pin(12) + Pin(13)
 > 15 = x
 OK
-> gates
+> list
 OK
 NONE
 > reset
