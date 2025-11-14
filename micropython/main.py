@@ -9,19 +9,17 @@ from _thread import start_new_thread
 
 class Logic:
     def __init__(self, equation, output):
-        if output in outputs: raise ValueError(f'Pin {output} is already the output of a logical expression. Set pin as input to free it.')
+        if output in outputs: raise ValueError(f'Value Error: Pin {output} is already the output of a boolean expression. Set pin as input to free it.')
         
-        self.eq = equation
         self.pins = []
         self.inputs = []
         self.layers = layer = 0
-        size = len(equation)
-        gate = False
+        self.eq = equation
+        equation = [''] + equation + ['']
+        size = len(equation) - 1
         
-        for ind in range(size):
-            current = equation[ind]
-            next = equation[ind+1] if ind < size-1 else ''
-            prev = equation[ind-1] if ind > 0 else ''
+        for ind in range(1,size):
+            prev, current, next = equation[ind-1:ind+2]
             
             if current.isdigit(): 
                 if current not in self.pins:
@@ -53,6 +51,13 @@ class Logic:
         
         self.output = setPin(output, Pin.OUT)
         outputs.append(output)
+    
+    def update(self):
+        eq = self.eq
+        for id, pin in zip(self.inputs, self.pins):
+            value = str(pin.value())
+            eq = [value if p==id else p for p in eq]
+        self.output.value(int(solve(eq, self.layers)[0]))
 
 logics = []
 outputs = []
@@ -90,12 +95,7 @@ def solve(eq, layers=0):
 def keepSolving():
     while True:
         sleep_us(1)
-        for logic in logics:
-            eq = logic.eq
-            for id, pin in zip(logic.inputs, logic.pins):
-                value = str(pin.value())
-                eq = [value if p==id else p for p in eq]
-            logic.output.value(int(solve(eq, logic.layers)[0]))
+        for logic in logics: logic.update()
 
 def setPin(pin, mode, value=0, force=False):
     id = int(pin)
@@ -160,6 +160,8 @@ def main():
                     
                     elif count == 2:
                         if params[1].isdigit():
+                            if params[1] in outputs: raise ValueError(f'Value Error: Pin {params[1]} is already the output of a boolean expression. Set pin as input to free it.')
+                            
                             pin = setPin(params[1], Pin.OUT)
                             if   params[0] == 'set'  : pin.value(1)
                             elif params[0] == 'reset': pin.value(0)
