@@ -1,5 +1,5 @@
-FLASHING_PINS  = (1,3)
-MEMORY_PINS    = (6,7,8,9,10,11)
+FLASHING_PINS  = (1, 3)
+MEMORY_PINS    = (6, 7, 8, 9, 10, 11)
 
 OPERATOR_ORDER = ('!', '*', '^', '+')
 
@@ -8,29 +8,54 @@ from time import sleep_us
 from _thread import start_new_thread
 
 class Logic:
-    def __init__(self, exp):
-        self.eq = exp[2:]
-        self.inputs = []
-        self.ids = []
-        self.layers = layer = 0
+    def __init__(self, equation, output):
+        if output in outputs: raise ValueError(f'Pin {output} is already the output of a logical expression. Set pin as input to free it.')
         
-        for p in self.eq:
-            if p == '(': 
+        self.eq = equation
+        self.pins = []
+        self.inputs = []
+        self.layers = layer = 0
+        size = len(equation)
+        gate = False
+        
+        for ind in range(size):
+            current = equation[ind]
+            next = equation[ind+1] if ind < size-1 else ''
+            prev = equation[ind-1] if ind > 0 else ''
+            
+            if current.isdigit(): 
+                if current not in self.pins:
+                    if current == output: raise ValueError('Value Error: Cannot directly connect the output pin to any input pin.')
+                    if next.isdigit(): raise SyntaxError('Syntax Error: Cannot use more than one Pin value without a logic gate.')
+                    if next == '(' or prev == ')': raise SyntaxError(f'Syntax Error: Cannot place brackets right next to a pin value ({current}) without a logic gate in between.')
+
+                    pin = setPin(current, Pin.IN)
+                    self.pins.append(pin)
+                    self.inputs.append(current)
+        
+            elif current in OPERATOR_ORDER:
+                if current == '!':
+                    if next in (')', None): raise SyntaxError('Syntax Error: NOT gate needs a pin value or open brackets after it.')
+                else:
+                    if next in (')', '') or prev in ('(', ''): raise SyntaxError(f"Syntax Error: '{current}' Symbol needs a pin value or brackets before and after it.")
+
+            elif current == '(':
                 self.layers += 1
                 layer += 1
-            elif p == ')':
+            elif current == ')':
                 layer -= 1
-                if layer < 0: raise SyntaxError("Syntax Error: Unopened brackets found.")
-            elif p.isdigit() and p not in self.inputs: 
-                pin = setPin(p, Pin.IN)
-                self.inputs.append(pin)
-                self.ids.append(p)
-            elif p not in OPERATOR_ORDER: raise SyntaxError(f"Syntax Error: Unknown parameter '{p}' found.")
-        if layer > 0: raise SyntaxError("Syntax Error: Unclosed brackets found.")
 
-        self.output = setPin(exp[0], Pin.OUT)
+                if prev == '(': raise SyntaxError('Syntax Error: Cannot leave brackets empty.')
+                if next == '(': raise SyntaxError('Syntax Error: Cannot place more than one pair of brackets without a logic gate.')
+                if layer < 0: raise SyntaxError("Syntax Error: Unopened brackets found.")
+            else: raise SyntaxError(f"Syntax Error: Unknown parameter '{current}' found.")
+        if layer > 0: raise SyntaxError("Syntax Error: Unclosed brackets found.")
+        
+        self.output = setPin(output, Pin.OUT)
+        outputs.append(output)
 
 logics = []
+outputs = []
 
 def solve(eq, layers=0):
     def subSolve(param1, op, param2='0'):
@@ -67,10 +92,7 @@ def keepSolving():
         sleep_us(1)
         for logic in logics:
             eq = logic.eq
-            # if Pin(2, Pin.IN).value():
-            #     print(logic.ids)
-            #     print(logic.inputs)
-            for id, pin in zip(logic.ids, logic.inputs):
+            for id, pin in zip(logic.inputs, logic.pins):
                 value = str(pin.value())
                 eq = [value if p==id else p for p in eq]
             logic.output.value(int(solve(eq, logic.layers)[0]))
@@ -83,41 +105,27 @@ def setPin(pin, mode, value=0, force=False):
 
     if mode == Pin.OUT: return Pin(id, mode, value=value)
     else:
-        for logic in logics:
-            if f'{logic.output}'==f'Pin({id})': 
-                if force: 
-                    logics.remove(logic)
-                    break
-                else: return Pin(id, Pin.OUT)
-        return Pin(id, mode)
-    
-# def setGate(in1:str, in2:str, op:str, out:str, inv:bool=False):
-#     global gates
-#     pinA, pinB, pinO = setPin(in1, Pin.IN), setPin(in2, Pin.IN) if in2 else None, setPin(out, Pin.OUT)
-#     gate = (pinA, pinB, op, pinO, inv)
-    
-#     if (gate in gates) or ((pinB, pinA, op, pinO, inv) in gates): raise ValueError('Value Error: This gate already exists.')
-#     elif pinO in (pinA, pinB): raise ValueError('Value Error: Cannot directly connect the output pin to any input pin.')
-#     else: gates = [g for g in gates if g[3] != pinO]
-    
-#     gates.append(gate)
+        try: 
+            ind = outputs.index(pin)
+            if force: 
+                logics.pop(ind)
+                outputs.pop(ind)
+            else: return Pin(id, Pin.OUT)
+        finally: return Pin(id, mode)
 
 def main():
     output = '?'
-
     def display(text):
         nonlocal output
         output=text
         print(output)
 
     while True:
-        entry = input('> ').lower().strip()
+        entry = input('\n> ').lower().strip()
         if entry:
             params = [p for p in entry.split(' ') if p]
             debug = params[-1] == '?'
-
             if debug: params.pop()
-            
             count = len(params)
             
             try:
@@ -125,8 +133,11 @@ def main():
                     if count == 1: display(f'OK\n{Pin(int(params[0])).value()}')
 
                     elif params[1] == '=':
-                        logic = Logic(params)
-                        logics.append(logic)
+                        if count == 3 and params[2] == 'x': 
+                            setPin(params[0], Pin.IN, force=True)
+                        else:
+                            logic = Logic(params[2:], params[0])
+                            logics.append(logic)
                         display('OK')
 
                     else: raise SyntaxError(f'Syntax Error: "=" is expected as the second parameter, not "{params[1]}".')
@@ -135,13 +146,8 @@ def main():
 
                     elif count == 1:
                         if params[0] == 'list':
-                            if not logics: display('OK\nNONE')
-                            else:
-                                line = 'OK\n'
-                                for logic in logics:
-                                    eq = "".join(f'{p} ' for p in logic.eq)
-                                    line += f'{logic.output} = ' + eq + '\n'
-                                display(line)
+                            output = '\n'.join(f'{logic.output} = ' + ' '.join(f'Pin({p})' if p.isdigit() else p for p in logic.eq) for logic in logics) if logics else 'NONE'
+                            display('OK\n' + output)
 
                         elif params[0] == 'reset':
                             print('OK')
@@ -168,5 +174,4 @@ def main():
 
 if __name__ == '__main__':
     start_new_thread(keepSolving, ())
-    print()
     main()

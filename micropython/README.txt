@@ -15,20 +15,20 @@ Furthermore:
 
 # Example Session
 
-> 15 = 12 + 13
+> 15 = 2 + ! ( 12 * 13 )
 OK
-> set 13
+> SET 13
 OK
 > 15
 OK
 1
-> GATES
+> LIST
 OK
-Pin(15) = Pin(12) + Pin(13)
+Pin(15) = 2 + ! ( 12 * 13 )
 > 15 = x
 OK
-> list
+> LIST
 OK
 NONE
-> reset
+> RESET
 OK
