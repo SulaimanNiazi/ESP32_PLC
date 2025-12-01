@@ -54,7 +54,8 @@ Once uploaded as `main.py`, the ESP32 automatically boots into PLC mode and star
 | `<pin> = ! <in1> ^ <in2>` | XNOR gate | `17 = ! 12 ^ 13` |
 | `<pin> = <Boolean Expression>` | Any Boolean Expression | `15 = 2 + ! ( 12 * 13 )` |
 | `LIST` | List configured boolean expressions | `LIST` |
-| `RESET` | Restart the ESP32 | `RESET` |
+| `RESET HARD` | Hard restart the ESP32 | `RESET HARD` |
+| `RESET SOFT` | SOft restart the ESP32 | `RESET SOFT` |
 | `SAVE` | Create a backup file storing the current expressions | `SAVE` |
 
 💡 Add `?` at the end of any command for **debug mode** to show detailed error messages.

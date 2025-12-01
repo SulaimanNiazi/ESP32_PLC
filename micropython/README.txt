@@ -20,15 +20,10 @@ OK
 > SET 13
 OK
 > 15
-OK
 1
 > LIST
-OK
-Pin(15) = 2 + ! ( 12 * 13 )
+Pin(15) = Pin(2) + ! ( Pin(12) * Pin(13) )
 > 15 = x
 OK
 > LIST
-OK
 NONE
-> RESET
-OK
