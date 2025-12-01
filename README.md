@@ -31,7 +31,8 @@ Once uploaded as `main.py`, the ESP32 automatically boots into PLC mode and star
 
 ✅ Pin protection for flashing/memory lines  
 ✅ Dynamic reconfiguration without reboot  
-✅ Built-in reset and diagnostics commands  
+✅ Built-in reset and diagnostics commands
+✅ Micropython file handling for storing backup files
 
 ---
 
@@ -52,8 +53,9 @@ Once uploaded as `main.py`, the ESP32 automatically boots into PLC mode and star
 | `<pin> = ! <in1> * <in2>` | NAND gate | `16 = ! 12 * 13` |
 | `<pin> = ! <in1> ^ <in2>` | XNOR gate | `17 = ! 12 ^ 13` |
 | `<pin> = <Boolean Expression>` | Any Boolean Expression | `15 = 2 + ! ( 12 * 13 )` |
-| `LIST` | List configured gates | `LIST` |
+| `LIST` | List configured boolean expressions | `LIST` |
 | `RESET` | Restart the ESP32 | `RESET` |
+| `SAVE` | Create a backup file storing the current expressions | `SAVE` |
 
 💡 Add `?` at the end of any command for **debug mode** to show detailed error messages.
 </details>

@@ -6,6 +6,7 @@ OPERATOR_ORDER = ('!', '*', '^', '+')
 from machine import Pin, reset
 from time import sleep_us
 from _thread import start_new_thread
+from ujson import dump, load
 
 class Logic:
     def __init__(self, equation, output):
@@ -145,35 +146,42 @@ def main():
                     if count == 0: raise SyntaxError('No command entered.')
 
                     elif count == 1:
-                        if params[0] == 'list':
-                            output = '\n'.join(f'{logic.output} = ' + ' '.join(f'Pin({p})' if p.isdigit() else p for p in logic.eq) for logic in logics) if logics else 'NONE'
-                            display('OK\n' + output)
+                        if params[0] == 'list': display('\n'.join(f'{logic.output} = ' + ' '.join(f'Pin({p})' if p.isdigit() else p for p in logic.eq) for logic in logics) if logics else 'NONE')
 
                         elif params[0] == 'reset':
                             print('OK')
                             reset()
 
                         elif params[0] == 'help':
-                            with open('README.txt', 'r') as f: display("OK\n" + f.read())
+                            try:
+                                with open('README.txt', 'r') as f: display("OK\n" + f.read())
+                            except: raise FileNotFoundError("File Not Found Error: README.txt is missing or corrupted.")
+
+                        elif params[0] == "save":
+                            data = [(logic.eq, out) for logic, out in zip(logics, outputs)]
+                            with open("backup.json", "w") as f: dump(data, f)
+                            display("OK")
 
                         else: raise SyntaxError(f'Syntax Error: "{params[0]}" is an unknown command.')
                     
-                    elif count == 2:
-                        if params[1].isdigit():
-                            if params[1] in outputs: raise ValueError(f'Value Error: Pin {params[1]} is already the output of a boolean expression. Set pin as input to free it.')
-                            
-                            pin = setPin(params[1], Pin.OUT)
-                            if   params[0] == 'set'  : pin.value(1)
-                            elif params[0] == 'reset': pin.value(0)
+                    elif count == 2 and params[1].isdigit():
+                        if params[1] in outputs: raise ValueError(f'Value Error: Pin {params[1]} is already the output of a boolean expression. Set pin as input to free it.')
+                        
+                        pin = setPin(params[1], Pin.OUT)
+                        if   params[0] == 'set'  : pin.value(1)
+                        elif params[0] == 'reset': pin.value(0)
 
-                            else: raise SyntaxError(f'Syntax Error: "{params[0]}" is an unknown command.')
-                            
-                            display('OK')
-                    
+                        else: raise SyntaxError(f'Syntax Error: "{params[0]}" is an unknown command.')
+                        display('OK')
                     else: raise SyntaxError(f'Syntax Error: The entered value "{params[0]}" does not take {count} parameters.')
             except Exception as e: display(e if debug else '?')
         else: print(output)
 
 if __name__ == '__main__':
     start_new_thread(keepSolving, ())
-    main()
+    try:
+        with open("backup.json", "r") as f: backup = load(f)
+        for data in backup:
+            logic = Logic(data[0], data[1])
+            logics.append(logic)
+    finally: main()
