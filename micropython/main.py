@@ -1,5 +1,5 @@
 from config import FLASHING_PINS, MEMORY_PINS, OPERATOR_ORDER
-from machine import Pin, reset, soft_reset
+from machine import Pin, reset, soft_reset, lightsleep, deepsleep
 from time import sleep_us
 from _thread import start_new_thread
 from ujson import dump, load
@@ -168,10 +168,22 @@ def main():
                             display("OK")
                         elif params[1] == "soft": soft_reset()
                         elif params[1] == "hard": reset()
-
                         else: raise ValueError(f"Value Error: RESET command does not recognise '{params[1]}' parameter.")
-                    else: raise SyntaxError(f'Syntax Error: The entered value "{params[0]}" does not take {count} parameters.')
-            except Exception as e: display(e if debug else '?')
+                    
+                    elif params[0] == "sleep":
+                        ensureCount(3)
+                        if params[2].isdigit():
+                            time = int(params[2])
+                            if params[1] == "light":
+                                display("OK")
+                                lightsleep(time)
+                            elif params[1] == "deep":
+                                display("OK")
+                                deepsleep(time)
+                            else: raise ValueError(f"Value Error: '{params[1]}' is an invalid parameter for SLEEP command.")
+                        else: raise ValueError(f"Value Error: SLEEP command's 2nd parameter should be numeric.")
+                    else: raise SyntaxError(f"Syntax Error: '{params[0]}' is an unrecognized command.")
+            except Exception as e: display(e if debug else "?")
         else: print(output)
 
 def keepSolving():
@@ -179,7 +191,7 @@ def keepSolving():
         sleep_us(1)
         for logic in logics: logic.update()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     start_new_thread(keepSolving, ())
     try:
         with open("backup.json", "r") as f: backup = load(f)

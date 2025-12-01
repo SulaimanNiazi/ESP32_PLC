@@ -56,6 +56,8 @@ Once uploaded as `main.py`, the ESP32 automatically boots into PLC mode and star
 | `LIST` | List configured boolean expressions | `LIST` |
 | `RESET HARD` | Hard restart the ESP32 | `RESET HARD` |
 | `RESET SOFT` | SOft restart the ESP32 | `RESET SOFT` |
+| `SLEEP LIGHT <int (ms)>` | Enter light sleep for given time | `SLEEP LIGHT 5000` |
+| `SLEEP DEEP <int (ms)>` | Enter deep sleep for given time | `SLEEP DEEP 5000` |
 | `SAVE` | Create a backup file storing the current expressions | `SAVE` |
 
 💡 Add `?` at the end of any command for **debug mode** to show detailed error messages.
